@@ -1,16 +1,20 @@
-import axios from "axios";
-import { useEffect, useState } from "react";
+import {useEffect, useState} from "react";
 import Card from "../components/Card";
 import SweetToast from "../components/SweetToast.ts";
 import PlayerCards from "./PlayerCards.tsx";
-import { CardStack, Player, PlayerCard } from "./interfaces.ts";
+import {CardStack, Player, PlayerCard} from "./interfaces.ts";
+import client from "../api/axios.ts";
 
 export default function Jeu() {
   const [cardStacks, setCardStacks] = useState<CardStack[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [playerCards, setPlayerCards] = useState<PlayerCard[]>([]);
+  const [selectedCards, setSelectedCards] = useState<PlayerCard[]>([]);
+  const addCardToList = (newCard: PlayerCard) => {
+    setSelectedCards((prevSelectedCards) => [...prevSelectedCards, newCard]);
+  };
+  const [clickable, setClickable] = useState<boolean>(true);
 
-  const client = axios.create({ baseURL: "http://localhost:8080/api/game" });
 
   useEffect(() => {
     client.post("/start").then((response) => {
@@ -18,15 +22,37 @@ export default function Jeu() {
       setPlayers(JSON.parse(response.data?.scoreBoardJson));
       setPlayerCards(JSON.parse(response.data?.playerCardsJson));
     }).catch((error) => {
-      SweetToast.fire({ icon: "error", title: error?.message });
-      console.error(error)
+      SweetToast.fire({icon: "error", title: error?.message});
+      console.error(error);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // const cardStacks: CardStack[] = JSON.parse("[{\"cards\":[89],\"stackId\":0,\"topValue\":89},{\"cards\":[29],\"stackId\":1,\"topValue\":29},{\"cards\":[51],\"stackId\":2,\"topValue\":51},{\"cards\":[47],\"stackId\":3,\"topValue\":47}]");
-  // const players: Player[] = JSON.parse("[{\"name\": \"A Very Long Name\", \"score\": 0},{\"name\": \"Someone Else\", \"score\": 0}]");
-  // const playerCards: PlayerCard[] = JSON.parse("[{\"heads\":5,\"value\":11},{\"heads\":1,\"value\":42},{\"heads\":1,\"value\":49},{\"heads\":3,\"value\":60},{\"heads\":1,\"value\":72},{\"heads\":2,\"value\":75},{\"heads\":1,\"value\":81},{\"heads\":1,\"value\":96},{\"heads\":1,\"value\":97},{\"heads\":1,\"value\":101}]");
+  const handleClick = async (card: PlayerCard) => {
+    if (!clickable) return;
+    console.log("card clicked");
+    setPlayerCards((playerCards) => playerCards.filter((c) => c !== card));
+    addCardToList(card);
+    setClickable(false);
+
+    await client.post('/selectCard', {cardId: card.value}).then(
+      async (response) => {
+        // if (response.data?.message) {
+        //   SweetToast.fire({icon: "success", title: response.data?.message});
+        // }
+        setCardStacks(JSON.parse(response.data?.cardStacksJson));
+        setPlayers(JSON.parse(response.data?.scoreBoardJson));
+        setPlayerCards(JSON.parse(response.data?.playerCardsJson));
+        await new Promise(r => setTimeout(r, 1000));
+        setSelectedCards([]);
+      }
+    ).catch((error) => {
+        SweetToast.fire({icon: "error", title: error?.message});
+        console.error(error);
+      }
+    );
+  };
+
 
   return (
     cardStacks?.length > 0 ? (
@@ -34,8 +60,11 @@ export default function Jeu() {
         <div className="flex-grow flex bg-wood">
           <div className="w-1/5 p-4 flex items-center justify-center">
             <div className="flex flex-col gap-2">
-              <Card value={2} />
-              <Card value={25} />
+              {selectedCards && (
+                selectedCards.map(({value}: PlayerCard, index: number) => (
+                  <Card value={value} key={index}/>
+                )))
+              }
             </div>
           </div>
           <div className="flex flex-col gap-4 w-3/5 p-4 items-center justify-center">
@@ -43,12 +72,12 @@ export default function Jeu() {
             {cardStacks.map((cardStack: CardStack) => (
               <div className="flex gap-2" key={cardStack.stackId}>
                 {cardStack.cards.map((value: number, index: number) => (
-                  <Card key={index} value={value} />
+                  <Card key={index} value={value}/>
                 ))}
                 {[...Array(5 - cardStack.cards.length)].map((_, index: number) => (
-                  <Card key={index} />
+                  <Card key={index}/>
                 ))}
-                <Card head />
+                <Card head/>
               </div>
             ))}
           </div>
@@ -61,7 +90,7 @@ export default function Jeu() {
             ))}
           </div>
         </div>
-        <PlayerCards playerCards={playerCards} />
+        <PlayerCards playerCards={playerCards} handleClick={handleClick} clickable={clickable}/>
       </div>
     ) : "Loading..."
   );
