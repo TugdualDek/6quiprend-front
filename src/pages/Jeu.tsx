@@ -37,9 +37,12 @@ export default function Jeu() {
 
     await client.post('/selectCard', {cardId: card.value}).then(
       async (response) => {
-        // if (response.data?.message) {
-        //   SweetToast.fire({icon: "success", title: response.data?.message});
-        // }
+        if (response.data?.message) {
+          SweetToast.fire({icon: "error", title: response.data?.message});
+          setClickable(true); // @TODO: remove this line
+        } else {
+          setClickable(true);
+        }
         setCardStacks(JSON.parse(response.data?.cardStacksJson));
         setPlayers(JSON.parse(response.data?.scoreBoardJson));
         setPlayerCards(JSON.parse(response.data?.playerCardsJson));
