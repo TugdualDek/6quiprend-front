@@ -1,18 +1,24 @@
-export default function Card(props: { empty: boolean; value?: number }) {
+import {MouseEventHandler} from "react";
+
+interface CardProps {
+  head?: boolean,
+  value?: number,
+  onClick?: MouseEventHandler<HTMLDivElement>
+}
+
+export default function Card({head, value, onClick}: CardProps) {
   return (
-    <div className="bg-base-100 rounded-xl shadow-lg w-[78px] hover:cursor-pointer hover:filter hover:brightness-[.75]">
-      {!props.empty ? (
-        <figure className="w-full h-full rounded-xl">
-        <img
-          src={`${
-            props.value ? "./card/" + props.value + ".png" : "./vache.png"
-          }`}
-          alt="card"
-          className="object-fill rounded-xl"
-        />
-      </figure>
-      ) : (
-        ""
+    <div
+      className={"bg-base-100 rounded-lg shadow-lg w-[60px] md:w-[70px] lg:w-[78px] hover:filter hover:brightness-[.95] hover:shadow-none select-none" + (onClick && " hover:cursor-pointer")}
+      onClick={onClick}>
+      {(head || value) && (
+        <figure className="w-full h-full rounded-lg border">
+          <img
+            src={`./${value ? "card/" + value : "img/vache"}.png`}
+            alt="card"
+            className="object-fill rounded-lg"
+          />
+        </figure>
       )}
     </div>
   );
