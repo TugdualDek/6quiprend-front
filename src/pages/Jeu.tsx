@@ -37,7 +37,7 @@ export default function Jeu() {
 
     await client.post('/selectCard', {cardId: card.value}).then(
       async (response) => {
-        if (response.data?.message) {
+        if (response.data?.message !== "ok") {
           SweetToast.fire({icon: "error", title: response.data?.message});
           setClickable(true); // @TODO: remove this line
         } else {
